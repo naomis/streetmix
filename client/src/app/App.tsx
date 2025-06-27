@@ -25,6 +25,8 @@ import WelcomePanel from './WelcomePanel'
 import NotificationBar from './NotificationBar'
 import Loading from './Loading'
 import SponsorBanner from './SponsorBanner'
+import StreetCost from '~src/streets/StreetCost/StreetCost'
+import fetchCosts from '~src/streets/StreetCost/fetchCosts'
 
 function App (): React.ReactElement {
   const [isLoading, setLoading] = useState(true)
@@ -49,8 +51,15 @@ function App (): React.ReactElement {
 
   // Set color mode on top level DOM element
   useEffect(() => {
+    // Element is guaranteed to exist
+
     document.querySelector('html')!.dataset.colorMode = colorMode
   }, [colorMode])
+
+  // Récupère les informations sur les coûts au chargement de l'application
+  useEffect(() => {
+    fetchCosts()
+  }, [])
 
   return (
     <>
@@ -76,6 +85,7 @@ function App (): React.ReactElement {
                 <MenusContainer />
                 <StreetNameplateContainer />
                 <InfoBubble />
+                <StreetCost />
                 <DebugHoverPolygon />
                 <WelcomePanel />
                 <PaletteContainer />

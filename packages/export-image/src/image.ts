@@ -126,24 +126,17 @@ export async function makeStreetImage (
     if (!options.transparentSky) {
       await drawSky(
         ctx,
-        street.data.street,
+        street,
         width,
         height,
-        horizonLine,
-        groundLevel,
+        horizonLine * options.scale,
+        groundLevel * options.scale,
         options.scale
       )
     }
 
     // Ground
-    drawGround(
-      ctx,
-      street.data.street,
-      baseWidth,
-      horizonLine,
-      groundLevel,
-      options.scale
-    )
+    drawGround(ctx, street, baseWidth, horizonLine, groundLevel, options.scale)
 
     // Section element labels
     if (options.elementLabels) {

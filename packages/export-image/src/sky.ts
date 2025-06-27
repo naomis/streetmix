@@ -1,21 +1,21 @@
 import * as Canvas from '@napi-rs/canvas'
 
-import type { SkyboxDefWithStyles, StreetJson } from '@streetmix/types'
+import type { SkyboxDefWithStyles, Street } from '@streetmix/types'
 
 export async function drawSky (
   ctx: Canvas.SKRSContext2D,
-  street: StreetJson,
+  street: Street,
   width: number, // image width (scaled)
   height: number, // image height (scaled) - might not need for here
-  horizonLine: number, // lower edge of sky area
-  groundLevel: number, // ground elevation line
+  horizonLine: number, // scaled - in many cases we only need to render to here because the rest is covered by ground
+  groundLevel: number, // scaled
   scale: number
 ): Promise<void> {
-  const sky = getSkyboxDef(street.skybox)
+  const sky = getSkyboxDef(street.data.street.skybox)
 
   // Solid color fill
   if (sky.backgroundColor !== undefined) {
-    drawBackgroundColor(ctx, width, horizonLine * scale, sky.backgroundColor)
+    drawBackgroundColor(ctx, width, horizonLine, sky.backgroundColor)
   }
 
   // TODO: All the other backgrounds!
@@ -33,7 +33,7 @@ export async function drawSky (
 
   // // Gradient fill
   // if (sky.backgroundGradient) {
-  //   drawBackgroundGradient(ctx, width, horizonLine * scale, scale, sky.backgroundGradient)
+  //   drawBackgroundGradient(ctx, width, horizonLine, scale, sky.backgroundGradient)
   // }
 
   // // Background objects
@@ -77,10 +77,8 @@ function drawBackgroundColor (
   height: number,
   color: string
 ): void {
-  ctx.save()
   ctx.fillStyle = color
   ctx.fillRect(0, 0, width, height)
-  ctx.restore()
 }
 
 /**
@@ -124,7 +122,7 @@ async function drawClouds (
 
   // TODO document magic numbers
   // y1 = top edge of sky-front image
-  const y1 = height * scale - skyFrontHeight
+  const y1 = height - skyFrontHeight
 
   for (let i = 0; i < Math.floor(width / skyFrontWidth) + 1; i++) {
     ctx.drawImage(
@@ -143,7 +141,7 @@ async function drawClouds (
   // TODO document magic numbers
   // y2 = top edge of sky-rear is 120 pixels above the top edge of sky-front
   // 120 must also be adjusted by scale value
-  const y2 = height * scale - skyFrontHeight - 120 * scale
+  const y2 = height - skyFrontHeight - 120 * scale
 
   for (let i = 0; i < Math.floor(width / skyRearWidth) + 1; i++) {
     ctx.drawImage(

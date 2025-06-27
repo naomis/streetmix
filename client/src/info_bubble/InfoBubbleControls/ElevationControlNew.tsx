@@ -1,68 +1,67 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { segmentsChanged } from '~/src/segments/view'
 import { useDispatch } from '~/src/store/hooks'
-import {
-  changeSegmentProperties,
-  setBoundaryElevation
-} from '~/src/store/slices/street'
+import { changeSegmentProperties } from '~/src/store/slices/street'
 import Checkbox from '~/src/ui/Checkbox'
 import UpDownInput from './UpDownInput'
 
-import type { BoundaryPosition } from '@streetmix/types'
+import type { Segment } from '@streetmix/types'
 
 interface ElevationControlProps {
-  position: number | BoundaryPosition
-  elevation: number
-  slope: boolean
+  position: number
+  segment: Segment
 }
 
 function ElevationControlNew ({
   position,
-  elevation,
-  slope = false
+  segment
 }: ElevationControlProps): React.ReactElement {
+  const [value, setValue] = useState(segment.elevation)
+  const [isSlope, toggleSlope] = useState(segment.slope ?? false)
   const dispatch = useDispatch()
 
-  function handleSlopeChange (): void {
-    if (typeof position === 'number') {
-      dispatch(changeSegmentProperties(position, { slope: !slope }))
-      segmentsChanged()
-    }
+  useEffect(() => {
+    dispatch(changeSegmentProperties(position, { elevation: value }))
+    segmentsChanged()
+  }, [value])
+
+  useEffect(() => {
+    dispatch(changeSegmentProperties(position, { slope: isSlope }))
+    segmentsChanged()
+  }, [isSlope])
+
+  function handleChangeValue (value: string): void {
+    const elevation = Number.parseInt(value, 10)
+    setValue(elevation)
   }
 
   function handleIncrement (): void {
-    if (typeof position === 'number') {
-      dispatch(changeSegmentProperties(position, { elevation: elevation + 1 }))
-      segmentsChanged()
-    } else {
-      dispatch(setBoundaryElevation(position, elevation + 1))
-    }
+    setValue((value) => value + 1)
   }
 
   function handleDecrement (): void {
-    if (typeof position === 'number') {
-      dispatch(changeSegmentProperties(position, { elevation: elevation - 1 }))
-      segmentsChanged()
-    } else {
-      dispatch(setBoundaryElevation(position, elevation - 1))
-    }
+    setValue((value) => value - 1)
   }
 
   return (
     <div className="variants">
       <UpDownInput
-        value={elevation}
+        value={value}
         minValue={0}
         maxValue={30}
         onClickUp={handleIncrement}
         onClickDown={handleDecrement}
+        onUpdatedValue={handleChangeValue}
       />
-      {typeof position === 'number' && (
-        <Checkbox checked={slope} onChange={handleSlopeChange}>
-          Slope
-        </Checkbox>
-      )}
+      <Checkbox
+        checked={isSlope}
+        onChange={() => {
+          toggleSlope(!isSlope)
+        }}
+      >
+        Slope
+      </Checkbox>
     </div>
   )
 }

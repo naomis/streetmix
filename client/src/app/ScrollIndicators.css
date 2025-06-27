@@ -4,6 +4,8 @@
 
   button {
     position: fixed;
+    height: 80px;
+    margin-top: -80px;
     padding: 0 0.2em;
     border: 0;
     background-color: transparent;

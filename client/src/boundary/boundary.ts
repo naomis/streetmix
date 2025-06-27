@@ -23,8 +23,6 @@ import type {
 
 export const GROUND_BASELINE_HEIGHT = 44
 
-const INVALID_SHADE_COLOUR = 'rgba(204, 163, 173, .9)'
-
 export function getBoundaryItem (variant: string): BoundaryDefinition {
   const item = BOUNDARY_DEFS[variant]
   if (item.id === undefined) {
@@ -126,10 +124,9 @@ export function prettifyHeight (
  */
 export function drawBoundary (
   ctx: CanvasRenderingContext2D,
-  position: BoundaryPosition,
   variant: string,
-  elevation: number,
   floors: number,
+  position: BoundaryPosition,
   totalWidth: number,
   totalHeight: number,
   offsetLeft: number,
@@ -143,8 +140,7 @@ export function drawBoundary (
   const svg = images.get(spriteId)
 
   const buildingHeight = getBoundaryImageHeight(variant, position, floors)
-  let offsetTop =
-    totalHeight - buildingHeight * multiplier - (elevation - 1) * 7 * multiplier
+  let offsetTop = totalHeight - buildingHeight * multiplier
 
   // Adjust offset if the building should be aligned at baseline instead of ground plane
   if (item.alignAtBaseline === true) {
@@ -302,7 +298,8 @@ export function drawBoundary (
 function shadeInContext (ctx: CanvasRenderingContext2D): void {
   ctx.save()
   ctx.globalCompositeOperation = 'source-atop'
-  ctx.fillStyle = INVALID_SHADE_COLOUR
+  // TODO const
+  ctx.fillStyle = 'rgba(204, 163, 173, .9)'
   ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.restore()
 }
