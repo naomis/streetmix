@@ -20,11 +20,15 @@ import type {
   BoundaryPosition,
   UnitsSetting
 } from '@streetmix/types'
+import { Boundary } from '~src/boundary/index'
 
 export const GROUND_BASELINE_HEIGHT = 44
 
-export function getBoundaryItem (variant: string): BoundaryDefinition {
+export function getBoundaryItem(variant: string): BoundaryDefinition {
   const item = BOUNDARY_DEFS[variant]
+  if (!item) {
+    return BOUNDARY_DEFS.grass
+  }
   if (item.id === undefined) {
     item.id = variant
   }
@@ -35,7 +39,7 @@ export function getBoundaryItem (variant: string): BoundaryDefinition {
 /**
  * Returns sprite id, given variant and position
  */
-function getSpriteId (variant: string, position: BoundaryPosition): string {
+function getSpriteId(variant: string, position: BoundaryPosition): string {
   const item = getBoundaryItem(variant)
   return item.spriteId + (item.sameOnBothSides === true ? '' : '-' + position)
 }
@@ -46,7 +50,7 @@ function getSpriteId (variant: string, position: BoundaryPosition): string {
  * multiple floors, this must be calculated from the number of floors and
  * sprite pixel specifications.
  */
-export function getBoundaryImageHeight (
+export function getBoundaryImageHeight(
   variant: string,
   position: BoundaryPosition,
   floors = 1
@@ -72,7 +76,7 @@ export function getBoundaryImageHeight (
 /**
  * Converts the number of floors to an actual height in meters
  */
-function calculateRealHeightNumber (
+function calculateRealHeightNumber(
   variant: string,
   position: BoundaryPosition,
   floors: number
@@ -90,7 +94,7 @@ function calculateRealHeightNumber (
  * looks like this:
  *    "4 floors (45m)"
  */
-export function prettifyHeight (
+export function prettifyHeight(
   variant: string,
   position: BoundaryPosition,
   floors: number,
@@ -122,7 +126,7 @@ export function prettifyHeight (
 /**
  * Draws boundary item on a canvas
  */
-export function drawBoundary (
+export function drawBoundary(
   ctx: CanvasRenderingContext2D,
   variant: string,
   floors: number,
@@ -188,7 +192,7 @@ export function drawBoundary (
       item.mainFloorHeight * TILE_SIZE,
       offsetLeft + leftPosShift * multiplier,
       offsetTop +
-        (buildingHeight - item.mainFloorHeight * TILE_SIZE) * multiplier,
+      (buildingHeight - item.mainFloorHeight * TILE_SIZE) * multiplier,
       undefined,
       item.mainFloorHeight * TILE_SIZE,
       multiplier,
@@ -207,17 +211,17 @@ export function drawBoundary (
         ctx,
         0,
         height -
-          item.mainFloorHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL -
-          item.floorHeight * TILE_SIZE * variant * TILESET_POINT_PER_PIXEL,
+        item.mainFloorHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL -
+        item.floorHeight * TILE_SIZE * variant * TILESET_POINT_PER_PIXEL,
         // 168 - (item.floorHeight * TILE_SIZE * variant), // 0 - 240 + (120 * item.variantsCount) - (item.floorHeight * TILE_SIZE * variant),
         undefined,
         item.floorHeight * TILE_SIZE,
         offsetLeft + leftPosShift * multiplier,
         offsetTop +
-          buildingHeight * multiplier -
-          (item.mainFloorHeight + item.floorHeight * i) *
-            TILE_SIZE *
-            multiplier,
+        buildingHeight * multiplier -
+        (item.mainFloorHeight + item.floorHeight * i) *
+        TILE_SIZE *
+        multiplier,
         undefined,
         item.floorHeight * TILE_SIZE,
         multiplier,
@@ -231,22 +235,22 @@ export function drawBoundary (
       ctx,
       0,
       height -
-        item.mainFloorHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL -
-        item.floorHeight *
-          TILE_SIZE *
-          (item.variantsCount ?? 0) *
-          TILESET_POINT_PER_PIXEL -
-        item.roofHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL,
+      item.mainFloorHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL -
+      item.floorHeight *
+      TILE_SIZE *
+      (item.variantsCount ?? 0) *
+      TILESET_POINT_PER_PIXEL -
+      item.roofHeight * TILE_SIZE * TILESET_POINT_PER_PIXEL,
       undefined,
       item.roofHeight * TILE_SIZE,
       offsetLeft + leftPosShift * multiplier,
       offsetTop +
-        buildingHeight * multiplier -
-        (item.mainFloorHeight +
-          item.floorHeight * (floors - 1) +
-          item.roofHeight) *
-          TILE_SIZE *
-          multiplier,
+      buildingHeight * multiplier -
+      (item.mainFloorHeight +
+        item.floorHeight * (floors - 1) +
+        item.roofHeight) *
+      TILE_SIZE *
+      multiplier,
       undefined,
       item.roofHeight * TILE_SIZE,
       multiplier,
@@ -295,7 +299,7 @@ export function drawBoundary (
 /**
  * Fills the building rendered area with a color
  */
-function shadeInContext (ctx: CanvasRenderingContext2D): void {
+function shadeInContext(ctx: CanvasRenderingContext2D): void {
   ctx.save()
   ctx.globalCompositeOperation = 'source-atop'
   // TODO const
