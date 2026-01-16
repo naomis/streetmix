@@ -49,13 +49,13 @@ function makeSpaceBetweenSlices (
 
 interface StreetEditableProps {
   resizeType: number | null
-  setBoundaryWidth: (node: HTMLDivElement | null) => void
+  setBuildingWidth: (node: HTMLDivElement | null) => void
   updatePerspective: (el: HTMLElement | null) => void
   draggingType?: number
 }
 
 function StreetEditable (props: StreetEditableProps): React.ReactElement {
-  const { resizeType, setBoundaryWidth, updatePerspective, draggingType } =
+  const { resizeType, setBuildingWidth, updatePerspective, draggingType } =
     props
   const street = useSelector((state) => state.street)
   const draggingState = useSelector((state) => state.ui.draggingState)
@@ -82,6 +82,7 @@ function StreetEditable (props: StreetEditableProps): React.ReactElement {
     street,
     streetSectionEditable
   )
+
   const [collectedProps, drop] = useDrop(dropTargetSpec)
 
   useEffect(() => {
@@ -107,7 +108,7 @@ function StreetEditable (props: StreetEditableProps): React.ReactElement {
       (prevProps.draggingType === DRAGGING_TYPE_RESIZE &&
         draggingType !== undefined)
     ) {
-      setBoundaryWidth(streetSectionEditable.current)
+      setBuildingWidth(streetSectionEditable.current)
     }
   }, [resizeType, draggingType])
 

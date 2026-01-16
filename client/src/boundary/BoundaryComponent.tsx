@@ -19,7 +19,6 @@ import {
   drawBoundary,
   GROUND_BASELINE_HEIGHT
 } from './boundary'
-import './BoundaryComponent.css'
 
 import type { BoundaryPosition } from '@streetmix/types'
 
@@ -30,18 +29,13 @@ const MAX_CANVAS_HEIGHT = 2048
  */
 function createBoundaryCanvas (
   el: HTMLElement,
-  position: BoundaryPosition,
   variant: string,
-  elevation: number,
+  position: BoundaryPosition,
   floors: number,
   shadeIn: boolean,
-  scale: number
+  dpi: number
 ): void {
   const elementWidth = el.offsetWidth
-
-  // Bail if there is no variant
-  // Currently this is an escape hatch for an error on mobile devices
-  if (!variant) return
 
   // Determine physical dimensions
   const item = getBoundaryItem(variant)
@@ -57,8 +51,8 @@ function createBoundaryCanvas (
   const canvasEl = document.createElement('canvas')
   const oldCanvasEl = el.querySelector('canvas')
 
-  canvasEl.width = width * scale
-  canvasEl.height = (height + GROUND_BASELINE_HEIGHT) * scale
+  canvasEl.width = width * dpi
+  canvasEl.height = (height + GROUND_BASELINE_HEIGHT) * dpi
   canvasEl.style.width = width + 'px'
   canvasEl.style.height = height + GROUND_BASELINE_HEIGHT + 'px'
 
@@ -75,28 +69,27 @@ function createBoundaryCanvas (
 
   drawBoundary(
     ctx,
-    position,
     variant,
-    elevation,
     floors,
+    position,
     width,
     height,
     0,
     1.0,
-    scale,
+    dpi,
     shadeIn
   )
 }
 
 interface BoundaryProps {
   position: BoundaryPosition
-  width: number
+  boundaryWidth: number
   updatePerspective: (el: HTMLElement | null) => void
 }
 
 function Boundary ({
   position,
-  width,
+  boundaryWidth,
   updatePerspective
 }: BoundaryProps): React.ReactElement {
   const street = useSelector((state) => state.street)
@@ -109,7 +102,7 @@ function Boundary ({
   const rightBoundaryEditable = useSelector(
     (state) => state.flags.EDIT_BOUNDARY_RIGHT.value
   )
-  const scale = useSelector((state) => state.system.devicePixelRatio)
+  const dpi = useSelector((state) => state.system.devicePixelRatio)
 
   const dispatch = useDispatch()
 
@@ -131,7 +124,6 @@ function Boundary ({
   )
   const variant = street.boundary[position].variant
   const floors = street.boundary[position].floors
-  const elevation = street.boundary[position].elevation
   const isOverflowed = street.remainingWidth < 0
 
   // Keep previous state for comparisons (ported from legacy behavior)
@@ -174,16 +166,15 @@ function Boundary ({
     } else {
       createBoundaryCanvas(
         newEl.current,
-        position,
         variant,
-        elevation,
+        position,
         floors,
         isOverflowed,
-        scale
+        dpi
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variant, floors, isOverflowed, width, elevation])
+  }, [variant, floors, isOverflowed, boundaryWidth])
 
   // Effect runs when boundary elements switch in/out
   useEffect(() => {
@@ -193,12 +184,11 @@ function Boundary ({
     updatePerspective(newEl.current)
     createBoundaryCanvas(
       newEl.current,
-      position,
       variant,
-      elevation,
+      position,
       floors,
       isOverflowed,
-      scale
+      dpi
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [switchElements])
@@ -265,27 +255,22 @@ function Boundary ({
 
   function renderBoundary (
     boundary: string,
-    nodeRef: React.RefObject<null>,
-    elevation: number,
-    width: number
+    nodeRef: React.RefObject<null>
   ): React.ReactElement {
     const isPreviousElement = boundary === 'old'
 
-    const widthStyle = {
-      [position]: `-${width}px`,
-      width: width + 'px'
-    }
-    const elevationStyle = {
-      height: `${45 + (elevation - 1) * 7}px`
+    const style = {
+      [position]: `-${boundaryWidth}px`,
+      width: boundaryWidth + 'px'
     }
 
     const classNames = ['street-section-boundary']
 
     // Add a class name for boundary position
-    classNames.push(`boundary-${position}`)
+    classNames.push(`street-segment-boundary-${position}`)
 
     if (isPreviousElement && activeSegment === position) {
-      classNames.push('active')
+      classNames.push('hover')
     }
 
     // Outer wrapping div is a workaround for CSSTransition's dependence on
@@ -293,17 +278,18 @@ function Boundary ({
     // node. This is wrapping the existing <section> to preserve existing
     // node switching functionality
     return (
-      <button className={classNames.join(' ')} style={widthStyle} ref={nodeRef}>
+      <div className={classNames.join(' ')} style={style} ref={nodeRef}>
         <section
+          style={{ width: '100%', height: '100%', perspective: '400px' }}
           ref={(ref) => {
             changeRefs(ref, isPreviousElement)
           }}
           onMouseEnter={handleElementMouseEnter}
           onMouseLeave={handleElementMouseLeave}
-        />
-        <div className="active-bg" />
-        <div className="boundary-dirt" style={elevationStyle} />
-      </button>
+        >
+          <div className="hover-bk" />
+        </section>
+      </div>
     )
   }
 
@@ -317,7 +303,7 @@ function Boundary ({
         unmountOnExit
         nodeRef={oldRef}
       >
-        {renderBoundary('old', oldRef, elevation, width)}
+        {renderBoundary('old', oldRef)}
       </CSSTransition>
       <CSSTransition
         key="new-boundary"
@@ -328,7 +314,7 @@ function Boundary ({
         unmountOnExit
         nodeRef={newRef}
       >
-        {renderBoundary('new', newRef, elevation, width)}
+        {renderBoundary('new', newRef)}
       </CSSTransition>
     </>
   )

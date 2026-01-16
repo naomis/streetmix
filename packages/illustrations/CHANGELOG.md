@@ -2,8 +2,6 @@
 
 - Add sand ground texture
 - Add beach lounger
-- Optimize buildings for metric units
-- Slightly increase the depth of "narrow" buildings.
 
 # v2.2.0
 

@@ -26,6 +26,6 @@ describe('prettifyHeight()', () => {
       SETTINGS_UNITS_IMPERIAL,
       formatMessage
     )
-    expect(text).toBe('3 floors (36⅛′)')
+    expect(text).toBe('3 floors (36′)')
   })
 })

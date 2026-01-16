@@ -16,6 +16,7 @@ import {
 import { updateStreetMargin } from '../segments/resizing'
 import SkyBox from '../sky/SkyBox'
 import ScrollIndicators from './ScrollIndicators'
+import StreetViewDirt from './StreetViewDirt'
 import StreetEditable from './StreetEditable'
 import './StreetView.css'
 
@@ -29,7 +30,7 @@ function StreetView (): React.ReactElement {
   })
   const [scrollPos, setScrollPos] = useState(0)
   const [resizeType, setResizeType] = useState<number | null>(null)
-  const [boundaryWidth, setBoundaryWidth] = useState(0)
+  const [boundaryWidth, setBuildingWidth] = useState(0)
 
   const sectionEl = useRef<HTMLDivElement>(null)
   const sectionCanvasEl = useRef<HTMLCanvasElement>(null)
@@ -189,8 +190,8 @@ function StreetView (): React.ReactElement {
    * is calculated as the street scrolls and stored in state.
    */
   function calculateScrollIndicators ():
-    | { left: number; right: number }
-    | undefined {
+  | { left: number, right: number }
+  | undefined {
     const el = sectionEl.current
     if (!el) return
 
@@ -248,7 +249,7 @@ function StreetView (): React.ReactElement {
     animate(el, { scrollLeft: newScrollLeft }, 300)
   }
 
-  function getBoundaryWidth (el: HTMLDivElement | null): void {
+  function getBuildingWidth (el: HTMLDivElement | null): void {
     if (el === null) return
     const pos = getElAbsolutePos(el)
 
@@ -257,7 +258,7 @@ function StreetView (): React.ReactElement {
       width = 0
     }
 
-    setBoundaryWidth(width)
+    setBuildingWidth(width)
     setResizeType(null)
   }
 
@@ -293,23 +294,23 @@ function StreetView (): React.ReactElement {
           <section id="street-section-canvas" ref={sectionCanvasEl}>
             <Boundary
               position="left"
-              width={boundaryWidth}
+              boundaryWidth={boundaryWidth}
               updatePerspective={updatePerspective}
             />
             <Boundary
               position="right"
-              width={boundaryWidth}
+              boundaryWidth={boundaryWidth}
               updatePerspective={updatePerspective}
             />
             <StreetEditable
               resizeType={resizeType}
-              setBoundaryWidth={getBoundaryWidth}
+              setBuildingWidth={getBuildingWidth}
               updatePerspective={updatePerspective}
               draggingType={draggingType}
             />
             <ResizeGuides />
             <EmptySegmentContainer />
-            <section className="street-section-ground" />
+            <StreetViewDirt boundaryWidth={boundaryWidth} />
           </section>
           <ScrollIndicators
             left={scrollIndicators.left}

@@ -4,26 +4,29 @@ import { useIntl } from 'react-intl'
 import { useSelector, useDispatch } from '~/src/store/hooks'
 import {
   setBuildingVariant,
-  changeSegmentVariant
+  changeSegmentVariant,
+  changeSegmentProperties
 } from '~/src/store/slices/street'
 import { segmentsChanged } from '~/src/segments/view'
 import { getSegmentInfo } from '~/src/segments/info'
-import VARIANT_ICONS from '~/src/segments/variant_icons.yaml'
-import { getVariantInfo } from '~/src/segments/variant_utils'
+import VARIANT_ICONS from '~/src/segments/variant_icons.json'
+import { getVariantArray } from '~/src/segments/variant_utils'
 import {
   BUILDING_LEFT_POSITION,
   BUILDING_RIGHT_POSITION
 } from '~/src/segments/constants'
 import Button from '~/src/ui/Button'
 import Icon from '~/src/ui/Icon'
-import { Tooltip, TooltipGroup } from '~/src/ui/Tooltip'
 import {
   INFO_BUBBLE_TYPE_SEGMENT,
   INFO_BUBBLE_TYPE_LEFT_BUILDING,
   INFO_BUBBLE_TYPE_RIGHT_BUILDING
 } from '../constants'
+import ElevationControl from './ElevationControl'
 
 import type { BoundaryPosition } from '@streetmix/types'
+import MaterialControl from '~src/info_bubble/InfoBubbleControls/MaterialControl'
+import CustomControl from '~src/info_bubble/InfoBubbleControls/CustomControl'
 
 interface VariantsProps {
   type: number
@@ -51,16 +54,19 @@ function Variants (props: VariantsProps): React.ReactElement | null {
     return null
   })
   const flags = useSelector((state) => state.flags)
-  const isSignedIn = useSelector((state) => state.user.signedIn)
-  const isSubscriber = useSelector((state) => state.user.isSubscriber)
   const dispatch = useDispatch()
   const intl = useIntl()
+  const elements = useSelector((state) => state.costs.elements)
 
   let variantSets: string[] = []
+  let elevationToggle = false
   switch (type) {
     case INFO_BUBBLE_TYPE_SEGMENT: {
-      const { variants } = getSegmentInfo(segment.type)
+      const { variants, enableElevation } = getSegmentInfo(segment.type)
       variantSets = variants
+      if (enableElevation !== undefined) {
+        elevationToggle = true
+      }
       break
     }
     case INFO_BUBBLE_TYPE_LEFT_BUILDING:
@@ -80,7 +86,7 @@ function Variants (props: VariantsProps): React.ReactElement | null {
     switch (type) {
       case INFO_BUBBLE_TYPE_SEGMENT: {
         if (segment) {
-          const obj = getVariantInfo(segment.type, variant)
+          const obj = getVariantArray(segment.type, variant)
           bool = selection === obj[set as keyof typeof obj]
         }
         break
@@ -102,9 +108,24 @@ function Variants (props: VariantsProps): React.ReactElement | null {
 
     switch (type) {
       case INFO_BUBBLE_TYPE_SEGMENT:
-        handler = () => {
-          dispatch(changeSegmentVariant(position, set, selection))
-          segmentsChanged()
+        // modification du matériau s'il s'agit d'une bordure
+        if (segment.type === 'bordure' && set === 'bordure-type') {
+          const icon = VARIANT_ICONS[set][selection]
+          const element = elements.find(
+            (material) => material.nom === icon.title
+          )
+          handler = () => {
+            dispatch(changeSegmentVariant(position, set, selection))
+            dispatch(
+              changeSegmentProperties(position, { material: element.id })
+            )
+            segmentsChanged()
+          }
+        } else {
+          handler = () => {
+            dispatch(changeSegmentVariant(position, set, selection))
+            segmentsChanged()
+          }
         }
         break
       case INFO_BUBBLE_TYPE_LEFT_BUILDING:
@@ -139,76 +160,31 @@ function Variants (props: VariantsProps): React.ReactElement | null {
       if (!flag?.value) return null
     }
 
-    const label = intl.formatMessage({
+    const title = intl.formatMessage({
       id: `variant-icons.${set}|${selection}`,
       defaultMessage: icon.title
     })
 
-    let isLocked = false
-    let sublabel
-
-    // If there is an enable condition, add a note to the tooltip if it
-    // is locked for a reason (e.g. must sign in, must be a subscriber)
-    // If an "unlock flag" is set, enable the thing
-    if (
-      icon.unlockCondition !== undefined &&
-      !(icon.unlockWithFlag !== undefined && flags[icon.unlockWithFlag]?.value)
-    ) {
-      switch (icon.unlockCondition) {
-        case 'SUBSCRIBE':
-          if (!isSubscriber) {
-            isLocked = true
-            sublabel = intl.formatMessage({
-              id: 'plus.locked.sub',
-              // Default message ends with a Unicode-only left-right order mark
-              // to allow for proper punctuation in `rtl` text direction
-              // This character is hidden from editors by default!
-              defaultMessage: 'Upgrade to Streetmix+ to use!‎'
-            })
-          }
-          break
-        case 'SIGN_IN':
-        default:
-          if (!isSignedIn) {
-            isLocked = true
-            sublabel = intl.formatMessage({
-              id: 'plus.locked.user',
-              // Default message ends with a Unicode-only left-right order mark
-              // to allow for proper punctuation in `rtl` text direction
-              // This character is hidden from editors by default!
-              defaultMessage: 'Sign in to use!‎'
-            })
-          }
-          break
-      }
-    }
-
     const isSelected = isVariantCurrentlySelected(set, selection)
 
     return (
-      <Tooltip
-        label={label}
-        sublabel={sublabel}
-        placement="bottom"
+      <Button
         key={set + '.' + selection}
+        title={title}
+        className={isSelected ? 'variant-selected' : undefined}
+        disabled={isSelected}
+        onClick={getButtonOnClickHandler(set, selection)}
       >
-        <Button
-          data-testid={icon.title}
-          className={isSelected ? 'variant-selected' : undefined}
-          disabled={isSelected || isLocked}
-          onClick={getButtonOnClickHandler(set, selection)}
+        <svg
+          xmlns="http://www.w3.org/1999/svg"
+          xmlnsXlink="http://www.w3.org/1999/xlink"
+          className="icon"
+          style={icon.color !== undefined ? { fill: icon.color } : undefined}
         >
-          <svg
-            xmlns="http://www.w3.org/1999/svg"
-            xmlnsXlink="http://www.w3.org/1999/xlink"
-            className="icon"
-            style={icon.color !== undefined ? { fill: icon.color } : undefined}
-          >
-            <use href={`#icon-${icon.id}`} />
-          </svg>
-          {isLocked && <Icon name="lock" />}
-        </Button>
-      </Tooltip>
+          {/* `xlinkHref` is preferred over `href` for compatibility with Safari */}
+          <use xlinkHref={`#icon-${icon.id}`} />
+        </svg>
+      </Button>
     )
   }
 
@@ -241,6 +217,30 @@ function Variants (props: VariantsProps): React.ReactElement | null {
           }
         })
 
+        if (elevationToggle) {
+          // Street vendors always have enabled elevation controls
+          // regardless of subscriber state
+          const forceEnable =
+            segment?.type === 'street-vendor' ||
+            flags.ELEVATION_CONTROLS_UNLOCKED.value
+
+          // React wants a unique key here
+          variantEls.push(<hr key="elevation_divider" />)
+          variantEls.push(
+            <ElevationControl
+              position={position}
+              segment={segment}
+              key="elevation_control"
+              forceEnable={forceEnable}
+            />
+          )
+        }
+
+        variantEls.push(<hr />)
+        variantEls.push(
+          <MaterialControl position={position} segment={segment} />
+        )
+
         break
       }
       case INFO_BUBBLE_TYPE_LEFT_BUILDING:
@@ -262,9 +262,10 @@ function Variants (props: VariantsProps): React.ReactElement | null {
   if (variantSets.length === 0) return null
 
   return (
-    <div className="variants">
-      <TooltipGroup>{renderVariantsSelection()}</TooltipGroup>
-    </div>
+    <>
+      {segment?.type === 'custom' && <CustomControl position={position} />}
+      <div className="variants">{renderVariantsSelection()}</div>
+    </>
   )
 }
 

@@ -26,7 +26,7 @@ import {
   hideControls,
   cancelSegmentResizeTransitions
 } from './resizing'
-import { getVariantInfo, getVariantString } from './variant_utils'
+import { getVariantArray, getVariantString } from './variant_utils'
 import {
   TILE_SIZE,
   MIN_SEGMENT_WIDTH,
@@ -239,14 +239,11 @@ function doDropHeuristics (draggedItem, draggedItemType) {
 
   if (draggedItemType === Types.PALETTE) {
     if (street.remainingWidth > 0 && actualWidth > street.remainingWidth) {
-      const variantMinWidth = getSegmentVariantInfo(
-        type,
-        variantString
-      ).minWidth
-      let segmentMinWidth = 0
-      if (variantMinWidth !== undefined) {
-        segmentMinWidth = getWidthInMetric(variantMinWidth, street.units)
-      }
+      const segmentMinWidth =
+        getWidthInMetric(
+          getSegmentVariantInfo(type, variantString).minWidth,
+          street.units
+        ) ?? 0
 
       if (
         street.remainingWidth >= MIN_SEGMENT_WIDTH &&
@@ -280,10 +277,10 @@ function doDropHeuristics (draggedItem, draggedItemType) {
     rightOwner === SegmentTypes.BIKE ||
     rightOwner === SegmentTypes.TRANSIT
 
-  const leftVariant = left && getVariantInfo(left.type, left.variantString)
-  const rightVariant = right && getVariantInfo(right.type, right.variantString)
+  const leftVariant = left && getVariantArray(left.type, left.variantString)
+  const rightVariant = right && getVariantArray(right.type, right.variantString)
 
-  const variant = getVariantInfo(type, variantString)
+  const variant = getVariantArray(type, variantString)
   const segmentInfo = getSegmentInfo(type)
 
   // Direction
@@ -481,12 +478,14 @@ function handleSegmentCanvasDrop (draggedItem, type) {
     variantString: draggedItem.variantString,
     width: draggedItem.actualWidth,
     elevation: draggedItem.elevation,
-    label: draggedItem.label
+    label: draggedItem.label,
+    material: draggedItem.material,
+    category: draggedItem.category
   }
 
   newSegment.variant =
     draggedItem.variant ||
-    getVariantInfo(newSegment.type, newSegment.variantString)
+    getVariantArray(newSegment.type, newSegment.variantString)
 
   let newIndex =
     segmentAfterEl !== undefined ? segmentAfterEl + 1 : segmentBeforeEl
@@ -543,7 +542,9 @@ export function createSliceDragSpec (props) {
         type: props.segment.type,
         label: props.segment.label,
         actualWidth: props.segment.width,
-        elevation: props.segment.elevation
+        elevation: props.segment.elevation,
+        material: props.segment.material,
+        category: props.segment.category
       }
     },
     end (item, monitor) {
@@ -606,12 +607,17 @@ export function createPaletteItemDragSpec (segment) {
         elevation = variantInfo.elevation
       }
 
+      const material = segment.defaultMaterial
+      const category = segment.category
+
       return {
         id: generateRandSeed(),
         type,
         variantString,
         actualWidth: getWidthInMetric(segment.defaultWidth, units),
-        elevation
+        elevation,
+        material,
+        category
       }
     },
     end: (item, monitor) => {
